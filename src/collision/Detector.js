@@ -56,6 +56,8 @@ var dummyPair = { idA: 1 << 30, idB: (1 << 30) + 1 };
 
         oldCollisions.push(dummyPair);
 
+        SAT.reset();
+
         var pairIndex = 0,
             oldCollision = oldCollisions[pairIndex++];
 

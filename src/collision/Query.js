@@ -28,6 +28,8 @@ var Vertices = require('../geometry/Vertices');
     Query.collides = function(body, bodies) {
         var collisions = [];
 
+        SAT.reset();
+
         for (var i = 0; i < bodies.length; i++) {
             var bodyA = bodies[i];
             

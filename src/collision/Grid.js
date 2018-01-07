@@ -97,9 +97,6 @@ var Common = require('../core/Common');
             var newRegion = Grid._getRegion(grid, bounds);
             var oldRegion = body.region;
 
-            // set the new region
-            body.region = newRegion;
-
             // if the body has changed grid region
             if (
                 newRegion.startCol === oldRegion.startCol &&
@@ -109,6 +106,9 @@ var Common = require('../core/Common');
             ) {
                 continue;
             }
+
+            // set the new region
+            body.region = newRegion;
 
             // @if DEBUG
             metrics.broadphaseTests += 1;

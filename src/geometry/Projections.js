@@ -38,8 +38,7 @@ module.exports = Projections;
      */
     Projections.verticesOntoAxes = function(projections, vertices, axes) {
         for (var i = 0; i < projections.length; i++) {
-            var projection = projections[i],
-                axis = axes[i],
+            var axis = axes[i],
                 axisX = axis.x,
                 axisY = axis.y,
                 vertex = vertices[0],
@@ -57,6 +56,7 @@ module.exports = Projections;
                 }
             }
 
+            var projection = projections[i];
             projection.min = min;
             projection.max = max;
         }

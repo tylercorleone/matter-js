@@ -16,6 +16,14 @@ var Vertices = require('../geometry/Vertices');
 
     SAT._temp = [{ depth: 0, axes: null }, { depth: 0, axes: null }];
 
+    var collisions = [],
+        collisionIndex = 0;
+
+    SAT.reset = function () {
+// console.error('collisions', collisionIndex, collisionCount)
+        collisionIndex = 0;
+    };
+
     /**
      * Detect collision between two bodies using the Separating Axis Theorem.
      * @method collides
@@ -36,22 +44,55 @@ var Vertices = require('../geometry/Vertices');
 
         var minOverlap = (overlapAB.depth < overlapBA.depth) ? overlapAB : overlapBA;
 
+        var depth = minOverlap.depth;
+        var parentA = bodyA.parent;
+        var parentB = bodyB.parent;
+
+        // using existing collision object if possible
+        var collision;
+        if (collisionIndex < collisions.length) {
+            collision = collisions[collisionIndex];
+        } else {
+            collision = {
+                // contactCount should be initialized here to avoid JS hidden structure de-opt
+                contactCount: 0,
+                contacts: new Array(2),
+                normal: { x: 0, y: 0 },
+                tangent: { x: 0, y: 0 },
+                penetration: { x: 0, y: 0 }
+            };
+
+            collisions.push(collision);
+        }
+
+        collisionIndex += 1;
+
+        collision.idA = bodyA.id;
+        collision.idB = bodyB.id;
+        collision.bodyA = bodyA;
+        collision.bodyB = bodyB;
+        collision.parentA = parentA;
+        collision.parentB = parentB;
+        collision.separation = depth;
+        collision.isSensor = bodyA.isSensor || bodyB.isSensor;
+        collision.inverseMass = parentA.inverseMass + parentB.inverseMass;
+        collision.friction = Math.min(parentA.friction, parentB.friction);
+        collision.frictionStatic = Math.max(parentA.frictionStatic, parentB.frictionStatic);
+        collision.restitution = Math.max(parentA.restitution, parentB.restitution);
+        collision.slop = Math.max(parentA.slop, parentB.slop);
+
         // ensure normal is facing away from bodyA
         var positionA = bodyA.position,
             positionB = bodyB.position,
             axis = minOverlap.axis,
-            normal;
+            normal = collision.normal;
 
         if (axis.x * (positionB.x - positionA.x) + axis.y * (positionB.y - positionA.y) < 0) {
-            normal = {
-                x: axis.x,
-                y: axis.y
-            };
+            normal.x = axis.x;
+            normal.y = axis.y;
         } else {
-            normal = {
-                x: -axis.x,
-                y: -axis.y
-            };
+            normal.x = -axis.x;
+            normal.y = -axis.y;
         }
 
         // find support points, there is always either exactly one or two
@@ -59,7 +100,7 @@ var Vertices = require('../geometry/Vertices');
             verticesB = bodyB.vertices,
             potentialSupportsB = SAT._findSupports(bodyA, verticesB, -normal.x, -normal.y),
             supportCount = 0,
-            supports = new Array(2);
+            supports = collision.contacts;
 
         // find the supports from bodyB that are inside bodyA
         if (Vertices.contains(verticesA, potentialSupportsB[0])) {
@@ -91,35 +132,13 @@ var Vertices = require('../geometry/Vertices');
             }
         }
 
-        var depth = minOverlap.depth;
-        var parentA = bodyA.parent;
-        var parentB = bodyB.parent;
-        return {
-            idA: bodyA.id,
-            idB: bodyB.id,
-            bodyA: bodyA,
-            bodyB: bodyB,
-            parentA: parentA,
-            parentB: parentB,
-            separation: depth,
-            normal: normal,
-            tangent: {
-                x: -normal.y,
-                y: normal.x
-            },
-            penetration: {
-                x: normal.x * depth,
-                y: normal.y * depth
-            },
-            contacts: supports,
-            contactCount: supportCount,
-            isSensor: bodyA.isSensor || bodyB.isSensor,
-            inverseMass: parentA.inverseMass + parentB.inverseMass,
-            friction: Math.min(parentA.friction, parentB.friction),
-            frictionStatic: Math.max(parentA.frictionStatic, parentB.frictionStatic),
-            restitution: Math.max(parentA.restitution, parentB.restitution),
-            slop: Math.max(parentA.slop, parentB.slop)
-        };
+        collision.contactCount = supportCount;
+        collision.tangent.x = -normal.y;
+        collision.tangent.y = normal.x;
+        collision.penetration.x = normal.x * depth;
+        collision.penetration.y = normal.y * depth;
+
+        return collision;
     };
 
     /**
