@@ -134,7 +134,7 @@ var Common = require('../core/Common');
     Grid.clear = function(grid, bodies) {
         grid.buckets = [];
         for (var i = 0; i < bodies.length; i++) {
-            bodies.pairs.length = 0;
+            bodies[i].pairs.length = 0;
         }
     };
 
